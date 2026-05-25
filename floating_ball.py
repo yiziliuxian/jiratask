@@ -119,7 +119,7 @@ class FloatingBall(QWidget):
         base_radius = 26 * self._scale
 
         # outer glow - breathing pulse
-        glow_alpha = 30 + int(25 * self._breath_factor)
+        glow_alpha = 50 + int(40 * self._breath_factor)
         glow_radius = base_radius + 12 + (6 * self._breath_factor)
         glow = QRadialGradient(center, glow_radius)
         glow.setColorAt(0.0, QColor(self._accent.red(), self._accent.green(), self._accent.blue(), glow_alpha))
@@ -131,7 +131,7 @@ class FloatingBall(QWidget):
 
         # ripples
         for r in self.ripples:
-            ripple_alpha = int(60 * r.opacity)
+            ripple_alpha = int(100 * r.opacity)
             painter.setPen(QPen(QColor(self._accent.red(), self._accent.green(), self._accent.blue(), ripple_alpha), 2))
             painter.setBrush(Qt.NoBrush)
             painter.drawEllipse(center, base_radius + r.radius, base_radius + r.radius)
@@ -141,10 +141,10 @@ class FloatingBall(QWidget):
             QPointF(center.x() - base_radius * 0.3, center.y() - base_radius * 0.3),
             base_radius * 1.6
         )
-        sphere_grad.setColorAt(0.0, QColor(255, 255, 255, 100))
-        sphere_grad.setColorAt(0.2, QColor(self._accent.red(), self._accent.green(), self._accent.blue(), 50))
-        sphere_grad.setColorAt(0.6, QColor(self._accent.red(), self._accent.green(), self._accent.blue(), 30))
-        sphere_grad.setColorAt(1.0, QColor(self._accent.red(), self._accent.green(), self._accent.blue(), 70))
+        sphere_grad.setColorAt(0.0, QColor(255, 255, 255, 120))
+        sphere_grad.setColorAt(0.2, QColor(self._accent.red(), self._accent.green(), self._accent.blue(), 90))
+        sphere_grad.setColorAt(0.6, QColor(self._accent.red(), self._accent.green(), self._accent.blue(), 60))
+        sphere_grad.setColorAt(1.0, QColor(self._accent.red(), self._accent.green(), self._accent.blue(), 120))
 
         painter.setBrush(QBrush(sphere_grad))
         painter.setPen(Qt.NoPen)
@@ -153,7 +153,7 @@ class FloatingBall(QWidget):
         # inner glass ring
         ring_grad = QRadialGradient(center, base_radius)
         ring_grad.setColorAt(0.85, QColor(255, 255, 255, 0))
-        ring_grad.setColorAt(0.92, QColor(255, 255, 255, 40))
+        ring_grad.setColorAt(0.92, QColor(255, 255, 255, 60))
         ring_grad.setColorAt(1.0, QColor(255, 255, 255, 0))
         painter.setBrush(QBrush(ring_grad))
         painter.drawEllipse(center, base_radius, base_radius)

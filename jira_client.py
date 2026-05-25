@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import urllib3
 from datetime import datetime
 
@@ -7,8 +8,16 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 _http = urllib3.PoolManager(cert_reqs='CERT_NONE')
 
-DEBUG_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'jira_debug.log')
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+
+def _get_app_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+_app_dir = _get_app_dir()
+DEBUG_LOG = os.path.join(_app_dir, 'jira_debug.log')
+CONFIG_PATH = os.path.join(_app_dir, 'config.json')
 
 
 def _debug(msg):
