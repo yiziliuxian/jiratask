@@ -3,9 +3,9 @@ import os
 import urllib3
 from datetime import datetime
 
-from jira import JIRA
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+_http = urllib3.PoolManager(cert_reqs='CERT_NONE')
 
 DEBUG_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'jira_debug.log')
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
@@ -33,30 +33,23 @@ def save_config(config):
         json.dump(config, f, indent=2, ensure_ascii=False)
 
 
-def connect_jira(config):
-    jira_url = config['jira_url'].rstrip('/')
-    api_token = config['api_token']
-
-    try:
-        jira = JIRA(
-            server=jira_url,
-            token_auth=api_token,
-            options={'verify': False},
-            get_server_info=False,
-            validate=False,
-        )
-        myself = jira.myself()
-        _debug(f'Connected via token_auth as {myself.get("name")}')
-        return jira
-    except Exception as e:
-        _debug(f'token_auth failed: {e}')
-
-    raise Exception('PAT authentication failed. Generate a new token from:\n'
-                    f'{jira_url}/secure/ViewPersonalAccessTokenPage.jspa')
+def _api_get(url, token):
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json',
+    }
+    resp = _http.request('GET', url, headers=headers)
+    if resp.status >= 400:
+        raise Exception(f'HTTP {resp.status}: {resp.data.decode("utf-8", errors="replace")[:500]}')
+    return json.loads(resp.data.decode('utf-8'))
 
 
-def _find_end_date_field(jira):
-    fields = jira.fields()
+def _verify_connection(jira_url, token):
+    _api_get(f'{jira_url}/rest/api/2/myself', token)
+
+
+def _find_end_date_field(jira_url, token):
+    fields = _api_get(f'{jira_url}/rest/api/2/field', token)
     for field in fields:
         if field['name'] == 'End date':
             _debug(f'Found "End date" field: {field["id"]}')
@@ -68,12 +61,15 @@ def _find_end_date_field(jira):
 def fetch_jira_tasks(config):
     _clear_debug()
     jira_url = config['jira_url'].rstrip('/')
+    token = config['api_token']
 
-    jira = connect_jira(config)
-    end_date_field = _find_end_date_field(jira)
+    _verify_connection(jira_url, token)
+    _debug('Connected via PAT')
+
+    end_date_field = _find_end_date_field(jira_url, token)
 
     if end_date_field:
-        field_number = end_date_field.split("_")[1]
+        field_number = end_date_field.split('_')[1]
         order_clause = f'cf[{field_number}] ASC'
     else:
         order_clause = 'duedate ASC'
@@ -85,23 +81,29 @@ def fetch_jira_tasks(config):
     if end_date_field:
         fetch_fields += f',{end_date_field}'
 
-    issues = jira.search_issues(jql, maxResults=100, fields=fetch_fields)
+    import urllib.parse
+    jql_encoded = urllib.parse.quote(jql)
+    search_url = f'{jira_url}/rest/api/2/search?jql={jql_encoded}&maxResults=100&fields={fetch_fields}'
+    data = _api_get(search_url, token)
+    issues = data.get('issues', [])
     _debug(f'Found {len(issues)} issues')
 
     tasks = []
     today = datetime.now().date()
     for issue in issues:
-        key = issue.key
-        summary = issue.fields.summary
-        status_name = issue.fields.status.name if issue.fields.status else ''
+        fields = issue.get('fields', {})
+        key = issue.get('key', '')
+        summary = fields.get('summary', '')
+        status_obj = fields.get('status', {})
+        status_name = status_obj.get('name', '') if status_obj else ''
 
         if end_date_field:
-            duedate_raw = getattr(issue.fields, end_date_field, None)
+            duedate_raw = fields.get(end_date_field)
         else:
-            duedate_raw = issue.fields.duedate
+            duedate_raw = fields.get('duedate')
 
         if duedate_raw:
-            duedate = datetime.strptime(str(duedate_raw), '%Y-%m-%d').date()
+            duedate = datetime.strptime(str(duedate_raw)[:10], '%Y-%m-%d').date()
             duedate_str = duedate.isoformat()
         else:
             duedate = None
