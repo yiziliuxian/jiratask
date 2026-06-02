@@ -1,8 +1,9 @@
 import sys
 import urllib3
 
-from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QMessageBox
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QMessageBox, QSystemTrayIcon, QMenu
+from PySide6.QtCore import Qt, QTimer, QPointF, QRectF
+from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush, QPen, QFont, QRadialGradient
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from floating_ball import FloatingBall
@@ -91,6 +92,45 @@ class FloatingBallWithTask(FloatingBall):
         self.refresh_timer = QTimer(self)
         self.refresh_timer.timeout.connect(self.refresh_tasks)
         self.refresh_timer.start(5 * 60 * 1000)
+
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(self._create_tray_icon())
+        self.tray_icon.setToolTip("JiraTask")
+
+        tray_menu = QMenu()
+        show_action = tray_menu.addAction("显示任务列表")
+        show_action.triggered.connect(self.show_task_window)
+        tray_menu.addSeparator()
+        quit_action = tray_menu.addAction("退出")
+        quit_action.triggered.connect(QApplication.quit)
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.activated.connect(self.on_tray_activated)
+        self.tray_icon.show()
+
+    def _create_tray_icon(self):
+        size = 256
+        pixmap = QPixmap(size, size)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        center = QPointF(size / 2, size / 2)
+        radius = 112
+
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(QColor(108, 92, 231)))
+        painter.drawEllipse(center, radius, radius)
+
+        font = QFont("Segoe UI", 96, QFont.Weight.Bold)
+        font.setPixelSize(int(radius * 2))
+        painter.setFont(font)
+        painter.setPen(QColor(255, 255, 255))
+        painter.drawText(QRectF(0, 0, size, size), Qt.AlignCenter, "J")
+        painter.end()
+        return QIcon(pixmap)
+
+    def on_tray_activated(self, reason):
+        if reason == QSystemTrayIcon.DoubleClick:
+            self.show_task_window()
 
     def load_and_fetch(self):
         self._config = load_config()

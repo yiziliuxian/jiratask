@@ -36,7 +36,6 @@ cmd = [
     "--nofollow-import-to=asyncio",
     "--nofollow-import-to=multiprocessing",
     "--nofollow-import-to=concurrent",
-    "--nofollow-import-to=email",
     "--nofollow-import-to=html",
     "--nofollow-import-to=xml",
     "--nofollow-import-to=pydoc_data",
@@ -80,6 +79,7 @@ cmd = [
     "--nofollow-import-to=PySide6.QtDataVisualization",
     # Include our data files
     "--include-data-files=config.json=config.json",
+    "--windows-console-mode=disable",
     # Main entry point
     "main.py",
 ]

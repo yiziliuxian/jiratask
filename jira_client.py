@@ -119,8 +119,14 @@ def fetch_jira_tasks(config):
             duedate_str = ''
 
         task_url = f'{jira_url}/browse/{key}'
-        is_overdue = duedate is not None and duedate < today
+        from datetime import timedelta
+        review_statuses = {'Internal Review', 'External Review'}
+        one_week = today + timedelta(days=7)
+        is_overdue = (duedate is not None and duedate < today
+                      and status_name not in review_statuses)
         is_today = duedate is not None and duedate == today
+        is_approaching = (is_today is False and is_overdue is False
+                          and duedate is not None and duedate <= one_week)
 
         tasks.append({
             'key': key,
@@ -130,6 +136,7 @@ def fetch_jira_tasks(config):
             'url': task_url,
             'is_overdue': is_overdue,
             'is_today': is_today,
+            'is_approaching': is_approaching,
         })
 
     _debug(f'Returned {len(tasks)} tasks')

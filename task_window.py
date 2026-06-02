@@ -42,6 +42,7 @@ class TaskCard(QWidget):
 
         is_overdue = self.task.get('is_overdue', False)
         is_today = self.task.get('is_today', False)
+        is_approaching = self.task.get('is_approaching', False)
         w = self.width()
         h = self.height()
         margin = 8
@@ -50,22 +51,39 @@ class TaskCard(QWidget):
         card_rect = QRectF(margin, 2, w - margin * 2, h - 4)
 
         if self._hovered:
-            bg = QColor('#F0EDFF') if not is_overdue else QColor('#FFF0EE')
+            if is_overdue:
+                bg = QColor('#FFF0EE')
+            elif is_approaching:
+                bg = QColor('#FFF9F0')
+            else:
+                bg = QColor('#F0EDFF')
         else:
-            bg = QColor('#FAFBFC') if not is_overdue else QColor('#FFF5F3')
+            if is_overdue:
+                bg = QColor('#FFF5F3')
+            elif is_approaching:
+                bg = QColor('#FFFBF5')
+            else:
+                bg = QColor('#FAFBFC')
         painter.setPen(Qt.NoPen)
         painter.setBrush(bg)
         painter.drawRoundedRect(card_rect, radius, radius)
 
         border_pen = QPen(QColor('#E8E8E8'), 1)
         if self._hovered:
-            border_pen = QPen(QColor('#6C5CE7'), 1.5) if not is_overdue else QPen(QColor('#E17055'), 1.5)
+            if is_overdue:
+                border_pen = QPen(QColor('#E17055'), 1.5)
+            elif is_approaching:
+                border_pen = QPen(QColor('#E67E22'), 1.5)
+            else:
+                border_pen = QPen(QColor('#6C5CE7'), 1.5)
         painter.setPen(border_pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawRoundedRect(card_rect, radius, radius)
 
         if is_overdue:
             stripe_color = QColor('#E17055')
+        elif is_approaching:
+            stripe_color = QColor('#E67E22')
         elif is_today:
             stripe_color = QColor('#FDCB6E')
         else:
@@ -106,12 +124,15 @@ class TaskCard(QWidget):
 
         status_colors = {
             'overdue': (QColor('#FDE8E4'), QColor('#E17055')),
+            'approaching': (QColor('#FFF3CD'), QColor('#E67E22')),
             'today': (QColor('#FFF3CD'), QColor('#E67E22')),
             'progress': (QColor('#E8F5E9'), QColor('#00B894')),
             'default': (QColor('#EBE8FF'), QColor('#6C5CE7')),
         }
         if is_overdue:
             bg_c, fg_c = status_colors['overdue']
+        elif is_approaching:
+            bg_c, fg_c = status_colors['approaching']
         elif is_today:
             bg_c, fg_c = status_colors['today']
         else:
@@ -132,6 +153,9 @@ class TaskCard(QWidget):
             if is_overdue:
                 painter.setPen(QColor('#E17055'))
                 date_text = f"● {duedate}  OVERDUE"
+            elif is_approaching:
+                painter.setPen(QColor('#E67E22'))
+                date_text = duedate
             elif is_today:
                 painter.setPen(QColor('#E67E22'))
                 date_text = f"● {duedate}  TODAY"
@@ -239,7 +263,7 @@ class CustomTitleBar(QWidget):
 class TaskWindow(QDialog):
     def __init__(self, tasks=None, parent=None):
         super().__init__(parent)
-        self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.resize(560, 560)
 

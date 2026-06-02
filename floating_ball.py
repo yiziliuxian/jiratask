@@ -4,7 +4,7 @@ from PySide6.QtGui import QPainter, QColor, QBrush, QPen, QRadialGradient, QFont
 
 
 class Ripple:
-    def __init__(self, center, max_radius=60):
+    def __init__(self, center, max_radius=80):
         self.center = center
         self.radius = 0
         self.max_radius = max_radius
@@ -25,7 +25,7 @@ class FloatingBall(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_NoSystemBackground)
         self.setAutoFillBackground(False)
-        self.resize(100, 100)
+        self.resize(130, 130)
 
         self.dragging = False
         self.offset = QPoint()
@@ -59,14 +59,14 @@ class FloatingBall(QWidget):
         self._accent = QColor(108, 92, 231)
 
         screen = QApplication.primaryScreen().geometry()
-        self.move(screen.width() - 120, screen.height() // 2 - 50)
+        self.move(screen.width() - 150, screen.height() // 2 - 65)
         self.update_mask()
 
     def set_urgency(self, overdue_count, total_count):
         self._overdue_count = overdue_count
         self._total_count = total_count
         if overdue_count == 0:
-            self._accent = QColor(0, 184, 148)
+            self._accent = QColor(108, 92, 231)
         elif overdue_count <= 2:
             self._accent = QColor(253, 203, 110)
         else:
@@ -116,11 +116,11 @@ class FloatingBall(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
 
         center = QPointF(self.width() / 2, self.height() / 2)
-        base_radius = 26 * self._scale
+        base_radius = 34 * self._scale
 
         # outer glow - breathing pulse
         glow_alpha = 50 + int(40 * self._breath_factor)
-        glow_radius = base_radius + 12 + (6 * self._breath_factor)
+        glow_radius = base_radius + 16 + (8 * self._breath_factor)
         glow = QRadialGradient(center, glow_radius)
         glow.setColorAt(0.0, QColor(self._accent.red(), self._accent.green(), self._accent.blue(), glow_alpha))
         glow.setColorAt(0.5, QColor(self._accent.red(), self._accent.green(), self._accent.blue(), glow_alpha // 2))
@@ -186,7 +186,7 @@ class FloatingBall(QWidget):
 
         # task count in center
         if self._total_count > 0:
-            count_font = QFont("Segoe UI", int(11 * self._scale), QFont.Weight.Bold)
+            count_font = QFont("Segoe UI", int(14 * self._scale), QFont.Weight.Bold)
             painter.setFont(count_font)
             painter.setPen(QColor(255, 255, 255, 220))
             text_rect = QRectF(center.x() - base_radius, center.y() - base_radius,
@@ -195,7 +195,7 @@ class FloatingBall(QWidget):
 
         # overdue badge
         if self._overdue_count > 0:
-            badge_radius = 9 * self._scale
+            badge_radius = 12 * self._scale
             badge_center = QPointF(
                 center.x() + base_radius * 0.65,
                 center.y() - base_radius * 0.65
