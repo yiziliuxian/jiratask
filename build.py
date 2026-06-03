@@ -77,8 +77,7 @@ cmd = [
     "--nofollow-import-to=PySide6.QtCharts",
     "--nofollow-import-to=PySide6.Qt3D",
     "--nofollow-import-to=PySide6.QtDataVisualization",
-    # Include our data files
-    "--include-data-files=config.json=config.json",
+    # Do NOT include config.json - it should remain external
     "--windows-console-mode=disable",
     # Main entry point
     "main.py",

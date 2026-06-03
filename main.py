@@ -169,6 +169,9 @@ class FloatingBallWithTask(FloatingBall):
             self.task_window.finished.connect(self.on_task_window_closed)
             self.task_window.set_refresh_callback(self.refresh_tasks)
             self.task_window.show()
+        else:
+            self.task_window.raise_()
+            self.task_window.activateWindow()
 
     def on_task_window_closed(self):
         self.task_window = None

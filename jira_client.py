@@ -10,9 +10,22 @@ _http = urllib3.PoolManager(cert_reqs='CERT_NONE')
 
 
 def _get_app_dir():
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+    exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    file_dir = os.path.dirname(os.path.abspath(__file__))
+    is_packaged = getattr(sys, 'frozen', False) or (exe_dir.lower() != file_dir.lower())
+    if is_packaged:
+        try:
+            probe = os.path.join(exe_dir, '.writable_check')
+            with open(probe, 'w') as f:
+                f.write('ok')
+            os.remove(probe)
+            return exe_dir
+        except (OSError, PermissionError):
+            appdata = os.environ.get('APPDATA', os.path.expanduser('~'))
+            path = os.path.join(appdata, 'JiraTask')
+            os.makedirs(path, exist_ok=True)
+            return path
+    return file_dir
 
 
 _app_dir = _get_app_dir()
@@ -38,8 +51,21 @@ def load_config():
 
 
 def save_config(config):
-    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
+    try:
+        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        fallback = os.path.join(os.path.expanduser('~'), 'jiratask_save_error.log')
+        with open(fallback, 'a', encoding='utf-8') as f:
+            f.write(f'[{datetime.now().isoformat()}] save_config ERROR: path={CONFIG_PATH} error={e}\n')
+        alt_path = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'JiraTask', 'config.json')
+        try:
+            os.makedirs(os.path.dirname(alt_path), exist_ok=True)
+            with open(alt_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+        except Exception as e2:
+            with open(fallback, 'a', encoding='utf-8') as f:
+                f.write(f'[{datetime.now().isoformat()}] save_config FALLBACK ERROR: path={alt_path} error={e2}\n')
 
 
 def _api_get(url, token):
